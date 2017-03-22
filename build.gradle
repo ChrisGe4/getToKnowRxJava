@@ -1,0 +1,109 @@
+buildscript {
+    repositories {
+        maven {
+            mavenCentral()
+        }
+        jcenter()
+    }
+    dependencies {
+        //classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M2'
+
+    }
+}
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+            exclude "**/*Manual*"
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------
+mainClassName = 'com.app.Main'
+applicationName = 'rxjava'
+def buildDateTime = new Date().format('yyyyMMdd-HHmmss')
+version = '1.0-' + buildDateTime
+def configFileBasePath = "/etc/OrderUpdateEventNotifier/"
+applicationDefaultJvmArgs = ["-Dconfig.properties=" + configFileBasePath + "config.properties", "-DappName=OrderUpdateEventNotifier", "-Dlog4j.configurationFile=" + configFileBasePath + "log4j2.xml", "-Ddb.properties=" + configFileBasePath + "db.properties", "-Dlogging.file.path=../log/"
+                             , "-Dconsole.log=info", "-DRollingFile.log=info", "-Djson.log=info",
+                             "-Dkafka.log=info", "-Dkafka.host.port=10.65.133.33:9092,10.65.133.80:9092,10.65.133.87:9092",
+                             "-Dlogging.file.size=256", "-Dlogging.file.count=7", "-Dlogging.roll.pattern=yyyy-MM-dd"]
+//--------------------------------------------------------------------------------------------
+
+jar {
+    baseName = 'rxjava'
+    version = version
+}
+println 'Building as version: ' + rootProject.version
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+repositories {
+    mavenCentral()
+
+}
+
+
+dependencies {
+    compile 'io.reactivex:rxjava:1.1.6'
+}
+
+task collectJars(type: Copy) {
+    into "$buildDir/output/lib"
+    from configurations.testRuntime
+}
+
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Gradle Jar File Example',
+                'Implementation-Version': version,
+                'Main-Class': 'com.app.Main'
+    }
+    baseName = applicationName
+    version = version
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude "META-INF/*.RSA", "META-INF/*.SF", "META-INF/*.DSA"
+    with jar
+}
+
+configurations {
+    compile.exclude group: 'ch.qos.logback'
+}
+
+artifacts {
+    archives fatJar
+}
+
+task copyConf(type: Copy) {
+
+    from "src/main/resources/"
+    into "/etc/rxjava/"
+}
+
+task runit() {
+
+    dependsOn "copyConf", "run"
+}
+
+task buildit() {
+
+    dependsOn "copyConf"
+    dependsOn "clean", "build"
+}
+
