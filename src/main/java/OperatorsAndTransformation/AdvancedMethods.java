@@ -2,7 +2,11 @@ package OperatorsAndTransformation;
 
 import rx.Observable;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -103,11 +107,139 @@ S9:F6
             .scan(BigInteger.ONE, (big, cur) -> big.multiply(BigInteger.valueOf(cur)));
 
 
-        /**reduce*/
+        /**reduce
+         public <R> Observable<R> reduce(R initialValue,Func2<R,T,R> accumulator){
+         return scan(initialValue,accumulator).takeLast(1);
+         }
+         */
+
         //if your sequence is infinite, scan() keeps emitting events for each upstream event, whereas reduce() will never emit any event.
+        //eg. Imagine that you have a source of CashTransfer objects with getAmount() method returning BigDecimal. We would like to calculate the total amount on all transfers. The following two transformations are equivalent. They iterate over all transfers and add up amounts, beginning at ZERO:
+        Observable<CashTransfer> transfers = Observable.just(new CashTransfer());
+
+        Observable<BigDecimal> total1 = transfers.reduce(BigDecimal.ZERO,
+            (totalSoFar, transfer) -> totalSoFar.add(transfer.getAmount()));
+        //prefer smaller, more composable transformations over a single big one
+        Observable<BigDecimal> total2 =
+            transfers.map(CashTransfer::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        /**
+         * collect
+         **both reduce() and collect() are nonblocking,
+         */
+        // if use reduce
+        Observable<List<Integer>> all =
+            Observable.range(10, 20).reduce(new ArrayList<>(), (list, item) -> {
+                list.add(item);
+                return list;
+            });
+        //better
+        Observable<List<Integer>> all1 =
+            Observable.range(10, 20).collect(ArrayList::new, List::add);
+
+        /**Asserting Observable Has Exactly One Item Using single()
+         * In case this assumption is wrong, you will receive an exception
+         * */
+
+        /**Dropping Duplicates Using distinct() and distinctUntilChanged()
+         *
+         * Be sure to remember that distinct() must keep in mind all events/keys seen so far for eternity
+         *
+         * In practice, distinctUntilChanged() is often more reasonable
+         * */
+
+        Observable<Integer> randomInts = Observable.create(subscriber -> {
+            Random random = new Random();
+            while (!subscriber.isUnsubscribed()) {
+                subscriber.onNext(random.nextInt(1000));
+            }
+        });
+
+        Observable<Integer> uniqueRandomInts = randomInts.distinct().take(10);
+
+        //with predicate
+        //        Observable<Status> distinctUserIds = tweets
+        //            .distinct(status -> status.getUser().getId());
+
+
+
+        //The important difference between distinct() and distinctUntilChanged() is that the latter can produce duplicates but only if they were separated by a different value.
+        //distinctUntilChanged() must only remember the last seen value. distinctUntilChanged() has a predictable, constant memory footprint, as opposed to distinct().
+
+        Observable<Weather> tempChanges =
+            Observable.just(new Weather()).distinctUntilChanged(Weather::getTemperature);
+
+        /**take(n) and skip(n)
+         *
+         *
+         * Observable beginning with event n+1. Both operators are quite liberal: negative numbers are treated as zero, exceeding the Observable size is not treated as a bug:
+         * */
+
+        Observable.range(1, 5).take(3);  // [1, 2, 3]
+        Observable.range(1, 5).skip(3);  // [4, 5]
+        Observable.range(1, 5).skip(5);  // []
+
+        /**takeLast(n) and skipLast(n)
+         *
+         *keep a buffer of the last n
+         *
+         * It makes no sense to call takeLast() on an infinite stream because it will never emit anything
+         * */
+
+        Observable.range(1, 5).takeLast(2);  // [4, 5]
+        Observable.range(1, 5).skipLast(2);  // [1, 2, 3]
+
+        /**first() and last()
+         *
+         * overloaded versions that take predicates
+         * */
+        //can be implement via
+        Observable.range(1, 5).take(1).single();
+
+        /**takeFirst(predicate)
+         *
+         *filter(predicate).take(1)
+         *
+         *
+         * it will not break with NoSuchElementException
+         * */
+
+
+        /**takeUntil(predicate) and takeWhile(predicate)
+         *
+         *So the only difference is that takeUntil() will emit the first nonmatching value, whereas takeWhile() will not.
+         * */
+        Observable.range(1, 5).takeUntil(x -> x == 3);  // [1, 2, 3]
+        Observable.range(1, 5).takeWhile(x -> x != 3);  // [1, 2]
+
+
+        /**elementAt(n), elementAtOrDefault(), firstOrDefault(), lastOrDefault(), and singleOrDefault().*/
+
+
+        /**count()
+         *
+         * all operators are lazy so this will work even for quite large streams.
+         *
+         * */
+        //can be implement via
+        Observable<Integer> size =
+            Observable.just('A', 'B', 'C').reduce(0, (sizeForNow, ch) -> sizeForNow + 1);
+
+        /**all(predicate), exists(predicate), and contains(value)*/
+
+        Observable<Integer> numbers = Observable.range(1, 5);
+
+        numbers.all(x -> x != 4);    // [false]
+        numbers.exists(x -> x == 4); // [true]
+        numbers.contains(4);         // [true]
+
+
 
     }
 
+
+
+    //helper
     static Observable<String> stream(int initialDelay, int interval, String name) {
         return Observable.interval(initialDelay, interval, MILLISECONDS).map(x -> name + x)
             .doOnSubscribe(() -> System.out.println("Subscribe to " + name))
@@ -115,5 +247,19 @@ S9:F6
 
 
 
+    }
+
+    private static class CashTransfer {
+        public BigDecimal getAmount() {
+            return null;
+        }
+    }
+
+
+    private static class Weather {
+        public static <U> U getTemperature(Weather weather) {
+
+            return null;
+        }
     }
 }
