@@ -1,6 +1,5 @@
 package Chap4_applyingRx;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import rx.Observable;
 import rx.schedulers.Schedulers;
@@ -125,7 +124,7 @@ public class Imperative_Concurrency {
                 rxSendEmail(t)//
                     .ignoreElements()//
                     // .doOnError(e -> log.warn("Failed to send {}", ticket, e))//
-                    .onErrorReturn(err -> t)//
+                    // .onErrorReturn(err -> t)//
                     .subscribeOn(Schedulers.io()));
 
 
