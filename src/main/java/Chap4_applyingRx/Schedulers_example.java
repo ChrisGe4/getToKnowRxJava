@@ -25,6 +25,7 @@ public class Schedulers_example {
             subscriber.onNext("A");
             subscriber.onNext("B");
             subscriber.onCompleted();
+
         });
     }
 
@@ -177,7 +178,6 @@ public class Schedulers_example {
             .subscribe(x -> System.out.println("Got " + x), Throwable::printStackTrace,
                 () -> System.out.println("Completed"));
         System.out.println("Exiting");
-
 
 
 /*
@@ -427,7 +427,6 @@ Remember, everything below observeOn() is run within the supplied Scheduler, of 
 
          */
         Observable.just("A", "B").delay(1, SECONDS, schedulerA).subscribe(this::log);
-
     }
 
 
