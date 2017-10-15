@@ -63,6 +63,10 @@ dependencies {
     compile 'io.reactivex:rxjava:1.1.6'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     compile group: 'com.google.guava', name: 'guava', version: '21.0'
+    compile group: 'io.netty', name: 'netty-all', version: '4.0.4.Final'
+    compile 'io.reactivex:rxnetty-http:0.5.2'
+    compile 'org.asynchttpclient:async-http-client:2.0.35'
+
 }
 
 task collectJars(type: Copy) {
